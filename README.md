@@ -1,458 +1,459 @@
-# ReimBand Gemini
+# 🔍 ClaimLens
 
-### Multimodal Reimbursement Review Powered by Gemini
+### Gemini-Powered Reimbursement Document Review
 
-ReimBand Gemini is a multimodal reimbursement review assistant that transforms invoices, receipts, payment records, and PDF files into structured, reviewable financial data.
+ClaimLens is a Gemini-powered reimbursement review prototype that transforms redacted PDFs and invoice images into schema-validated JSON, structured finance tables, deterministic risk checks, and downloadable review artifacts.
 
-Instead of relying on a single chatbot to approve or reject a reimbursement request, ReimBand separates the workflow into three specialized stages:
-
-1. **Document Intake**
-2. **Policy Review**
-3. **Audit Review**
-
-The system uses Gemini’s multimodal document understanding and structured outputs to identify missing evidence, detect cross-currency risks, explain inconsistencies, and recommend when human review is required.
-
-> ReimBand Gemini Edition evolved from an earlier reimbursement workflow prototype. The Gemini-powered multimodal pipeline, structured extraction, policy review, and audit reasoning were developed for the Build with Gemini hackathon.
+> Built for the **Build with Gemini** hackathon using Gemini multimodal document understanding, structured output, Pydantic validation, and transparent Python review rules.
 
 ---
 
-## Live Demo
+## 🚀 Live Demo
 
-* **Streamlit Demo:** [Open ReimBand Gemini](YOUR_STREAMLIT_DEMO_URL)
-* **Demo Video:** [Watch the presentation](YOUR_VIDEO_URL)
+[Open the Streamlit Demo](YOUR_STREAMLIT_URL)
 
-Replace the placeholder URLs above with the final public links.
+## 🎥 YouTube Demo
 
----
-
-## Inspiration
-
-Reimbursement review is a real but often overlooked workflow problem.
-
-Finance teams need to inspect:
-
-* Invoices and receipts
-* Payment records
-* Amounts and currencies
-* Supporting documents
-* Reimbursement policies
-* Missing or inconsistent evidence
-* Cross-currency transactions
-
-This process is repetitive, slow, and easy to get wrong, especially when documents use different layouts, contain multiple currencies, or do not include complete payment evidence.
-
-We wanted to explore whether Gemini could do more than summarize a document. Our goal was to use Gemini’s multimodal capabilities to turn complex reimbursement files into structured data and then use specialized review stages to explain risks and recommend next actions.
+[Watch the Demo Video](YOUR_YOUTUBE_URL)
 
 ---
 
-## What ReimBand Does
+## 📖 Project Overview
 
-A user uploads a redacted:
+ClaimLens is an independent implementation created for the Build with Gemini hackathon. It is inspired by an earlier reimbursement workflow concept, but this Gemini edition has its own technical architecture and implementation.
 
-* PDF
-* Invoice image
-* Receipt
-* Bank statement
-* Payment record
-* Supporting reimbursement document
+This project does **not** use:
 
-Gemini analyzes both the visual layout and textual content of the uploaded document.
+* Band agents
+* Band SDK
+* Band Remote Agents
+* WebSocket orchestration
+* Multi-agent collaboration frameworks
 
-It extracts structured reimbursement information such as:
+Instead, ClaimLens is built around a **Gemini multimodal document-processing pipeline** combined with deterministic Python review logic.
 
+A finance reviewer can upload up to three redacted reimbursement documents. Gemini analyzes both visible text and document layout, classifies document types, extracts structured reimbursement records, and returns schema-constrained JSON.
+
+Python then validates the response and performs calculations and rule-based checks that should not be delegated to a language model.
+
+---
+
+## 💡 Inspiration
+
+Reimbursement evidence is often scattered across invoices, receipts, payment screenshots, bank statements, travel records, supporting documents, and even filenames.
+
+Reviewers may need to compare:
+
+* Document types
+* Visible totals
+* Dates
+* Currencies
+* Counterparties
+* Invoice numbers
+* Payment references
+* Proof of payment
+* Claimed reimbursement totals
+
+Traditional OCR may extract isolated text while missing tables, labels, screenshots, and relationships created by visual layout.
+
+ClaimLens demonstrates how Gemini multimodal understanding can reduce this manual friction while keeping the final review process transparent and human-controlled.
+
+---
+
+## 🧾 The Reimbursement Problem
+
+Finance teams need to determine:
+
+* What type of evidence each document contains
+* Which amounts and currencies are visible
+* Whether payment proof exists
+* Whether multiple currencies appear in the same package
+* Whether critical invoice fields are missing
+* Whether a claimed total in the filename matches the extracted evidence
+* Whether the package requires manual review
+
+Manual review is slow and error-prone, especially when supporting evidence includes screenshots, tables, mixed currencies, or inconsistent document formats.
+
+ClaimLens combines multimodal extraction with deterministic validation to make these issues easier to identify.
+
+---
+
+## ✨ What the Application Does
+
+* Accepts PDF, PNG, JPG, and JPEG uploads
+* Supports up to three files in one review
+* Sends document content to Gemini for multimodal understanding
+* Reads visible text, tables, labels, screenshots, and layout relationships
+* Classifies reimbursement document types
+* Extracts structured reimbursement records
+* Validates Gemini output with Pydantic
+* Runs deterministic Python review rules
+* Displays metrics, records, warnings, and layout observations
+* Provides expandable structured JSON
+* Exports review records as CSV and JSON
+* Handles missing API keys without presenting cached data as live output
+* Clearly labels sample results as non-live Gemini responses
+
+Supported document classifications include:
+
+```text
+invoice
+receipt
+bank_statement
+payment_proof
+wechat_transfer
+travel_document
+supporting_document
+unknown
+```
+
+---
+
+## 🤖 How ClaimLens Uses the Gemini API
+
+The live processing path is implemented in `gemini_client.py` using the official Google Gen AI Python SDK.
+
+| Component                    | Implementation                        |
+| ---------------------------- | ------------------------------------- |
+| SDK                          | `google-genai`                        |
+| Default model                | `gemini-2.5-flash`                    |
+| API key environment variable | `GEMINI_API_KEY`                      |
+| Optional model override      | `GEMINI_MODEL`                        |
+| Main API method              | `client.models.generate_content(...)` |
+| Inline file input            | `types.Part.from_bytes(...)`          |
+| Large-document path          | Gemini Files API                      |
+| Response format              | `application/json`                    |
+| Response schema              | `ReimbursementExtractionResult`       |
+
+Example configuration:
+
+```python
+response = client.models.generate_content(
+    model=model_name,
+    contents=contents,
+    config=types.GenerateContentConfig(
+        response_mime_type="application/json",
+        response_schema=ReimbursementExtractionResult,
+    ),
+)
+```
+
+For inline document processing, files are converted into Gemini parts:
+
+```python
+types.Part.from_bytes(
+    data=file_bytes,
+    mime_type=mime_type,
+)
+```
+
+Larger PDFs can be handled through:
+
+```python
+client.files.upload(...)
+```
+
+### Official Documentation
+
+* [Google Gen AI SDK Libraries](https://ai.google.dev/gemini-api/docs/libraries)
+* [Gemini Document Processing](https://ai.google.dev/gemini-api/docs/document-processing)
+* [Gemini Structured Output](https://ai.google.dev/gemini-api/docs/structured-output)
+* [Gemini Models](https://ai.google.dev/gemini-api/docs/models)
+
+---
+
+## 👁️ Why Multimodal Understanding Is Necessary
+
+Reimbursement review depends on more than plain OCR text.
+
+For example:
+
+* A payment record may exist only as a screenshot
+* A total may appear inside a table
+* A currency symbol may appear in a column header
+* A transaction status may be indicated by a visual label
+* An invoice number may be positioned next to a specific field
+* A filename may contain a claimed total that the document evidence does not support
+
+Gemini can analyze text and visual layout together, making it suitable for messy financial documents where isolated OCR output is not enough.
+
+---
+
+## 🔄 Document-Processing Pipeline
+
+```text
+Upload files
+     ↓
+Validate type, count, and size
+     ↓
+Send document content to Gemini
+     ↓
+Analyze text and visual layout
+     ↓
+Classify document types
+     ↓
+Extract structured reimbursement records
+     ↓
+Return schema-constrained JSON
+     ↓
+Validate response with Pydantic
+     ↓
+Apply deterministic Python review rules
+     ↓
+Display findings and downloadable artifacts
+```
+
+Detailed workflow:
+
+1. The user uploads redacted PDFs or images.
+2. The application validates file count, MIME type, and file size.
+3. Gemini analyzes document content and layout.
+4. Gemini classifies each document or record.
+5. Gemini extracts reimbursement-related fields.
+6. Gemini returns JSON matching the Pydantic response schema.
+7. Pydantic validates the response before it reaches the interface.
+8. Python calculates totals and deterministic risk signals.
+9. Streamlit displays metrics, tables, findings, JSON, and exports.
+
+---
+
+## 🧩 Structured Output and Pydantic Validation
+
+The response schemas are defined in `schemas.py`.
+
+### `ExtractedRecord`
+
+Each extracted record can contain:
+
+* Source filename
+* Page or item reference
 * Document type
 * Invoice number
-* Invoice date
+* Transaction or invoice date
 * Amount
 * Currency
 * Seller or counterparty
+* Payment reference
 * Payment-proof status
-* Claimed total
-* Detected currencies
+* Layout summary
 * Uncertain fields
-* Risk warnings
+* Record-level warnings
 
-The extracted data is then passed through three specialized review stages.
+### `ReimbursementExtractionResult`
 
----
+The top-level result can contain:
 
-## Review Workflow
-
-### 1. Document Intake
-
-The Document Intake stage reads the uploaded PDF or image and converts it into structured reimbursement records.
-
-It identifies:
-
-* Invoice and payment information
-* Amounts and currencies
-* Document categories
-* Counterparties
-* Missing fields
-* Uncertain values
-* Initial risk warnings
-
-This stage extracts and normalizes information but does not make the final reimbursement decision.
-
-### 2. Policy Review
-
-The Policy Review stage checks whether the case contains the evidence normally required for reimbursement.
-
-It evaluates:
-
-* Required supporting documents
-* Missing payment evidence
-* Cross-currency review requirements
-* Blocking issues
-* Policy completeness
-* Recommended next steps
-
-### 3. Audit Review
-
-The Audit Review stage performs the final consistency and risk assessment.
-
-It checks:
-
-* Amount consistency
-* Currency consistency
+* Source files
+* Document summary
+* Extracted records
+* Detected document types
+* Detected currencies
+* Filename claims
+* Extracted totals
 * Payment-proof status
-* Missing supporting materials
-* Conflicting records
-* Risk level
-* Whether human review is required
+* Layout observations
+* Uncertain findings
+* Warnings
+* Recommended review action
 
-The final result may recommend:
+If Gemini returns an invalid structure, ClaimLens does not silently continue or make a financial decision.
 
-* Approval
-* Recheck
-* Additional document upload
-* Human review
+Instead, it displays a safe diagnostic message and asks the reviewer to retry or inspect the source documents.
 
 ---
 
-## Example Scenario
+## ⚖️ Deterministic Review Rules
 
-The demonstration case uses the following redacted file:
+Gemini is responsible for interpreting the documents. Python is responsible for calculations and explicit review rules.
+
+Python checks include:
+
+* Total amount by currency
+* Extracted record count
+* Invoice count
+* Payment-proof count
+* Missing critical fields
+* Multiple-currency detection
+* Filename-total comparison
+* Claimed-total mismatch
+* Cross-currency review flags
+* Human-review recommendation
+
+Example rules include:
+
+* Multiple detected currencies require manual review
+* Invoice evidence without visible payment proof creates a warning
+* Filename totals are treated as claims, not approval evidence
+* Missing amount or currency requires human review
+* A mismatch between a filename claim and extracted totals requires rechecking
+* Cross-currency amounts are not automatically combined
+* Exchange-rate conversion is not performed without an explicit policy
+
+This separation keeps mathematical checks reproducible and makes the review process easier to audit.
+
+---
+
+## 🧪 Example Workflow
+
+1. Open the ClaimLens web application.
+
+2. Upload a redacted reimbursement file, such as:
+
+   ```text
+   demo_case_02_mar30_mar31_total_1990_20_minimal_redacted.pdf
+   ```
+
+3. Click **Run Gemini Review**.
+
+4. Confirm that the application displays:
+
+   ```text
+   LIVE GEMINI REVIEW
+   ```
+
+5. Inspect:
+
+   * Document classifications
+   * Extracted records
+   * Amounts and currencies
+   * Payment-proof status
+   * Layout observations
+   * Deterministic warnings
+   * Recommended review action
+   * Structured JSON
+
+6. Download the resulting CSV or JSON artifact.
+
+### Sample Mode
+
+When no Gemini API key is configured, the application displays:
 
 ```text
-demo_case_02_mar30_mar31_total_1990_20_minimal_redacted.pdf
+GEMINI API KEY NOT CONFIGURED
 ```
 
-The file name indicates a claimed total of:
+The user may manually select:
 
 ```text
-1990.20 CNY
+Load Redacted Sample Result
 ```
 
-However, the uploaded material also contains USD invoice records.
-
-ReimBand Gemini identifies that:
-
-* Multiple currencies are present
-* Cross-currency review is required
-* Payment evidence may be missing or insufficient
-* The claimed total should not be automatically approved
-* A human reviewer should verify the payment record and exchange-rate evidence
-
-This prevents the application from making unsupported financial decisions.
-
----
-
-## How We Built It
-
-ReimBand Gemini is built with Python and Streamlit.
-
-The application uses the official Google Gen AI SDK to send uploaded PDFs and images to the Gemini API.
-
-Gemini performs:
-
-* Multimodal PDF understanding
-* Image and invoice interpretation
-* Financial field extraction
-* Structured JSON generation
-* Policy completeness reasoning
-* Audit and risk reasoning
-
-Instead of requesting a general natural-language response, the application defines explicit schemas for the intake, policy, and audit stages.
-
-The returned data is validated before being displayed in the interface.
-
-This makes the output easier to:
-
-* Display
-* Compare
-* Pass between review stages
-* Export as CSV
-* Audit
-* Integrate with future finance systems
-
----
-
-## Application Interface
-
-The Streamlit interface displays:
-
-* Uploaded document information
-* Live or cached processing mode
-* Gemini model information
-* Extracted reimbursement records
-* Amount and currency summaries
-* Policy findings
-* Missing supporting documents
-* Audit risks and explanations
-* Recommended next actions
-* Downloadable CSV results
-
-The interface is designed as a lightweight finance workflow rather than a general-purpose chatbot.
-
----
-
-## Live and Cached Modes
-
-ReimBand Gemini supports two processing modes.
-
-### Live Gemini Mode
-
-When a valid Gemini API key is configured, the application sends the uploaded document to Gemini for real multimodal analysis.
-
-Live results are clearly labeled:
+Sample mode is clearly labeled:
 
 ```text
-LIVE GEMINI REVIEW
+SAMPLE / CACHED RESULT — NOT A LIVE GEMINI RESPONSE
 ```
 
-### Cached Demo Mode
+ClaimLens does not present cached sample data as live Gemini output.
 
-A redacted cached case is included so the demonstration remains available when the Gemini API is unavailable or no API key is configured.
+---
 
-Cached results are clearly labeled:
+## 🖼️ Screenshots
+
+Add public screenshots to the `assets/` directory after deployment:
 
 ```text
-CACHED DEMO RESULT
+assets/screenshot-upload.png
+assets/screenshot-live-review.png
+assets/screenshot-records-table.png
+assets/screenshot-json-export.png
 ```
 
-Cached responses are never presented as live Gemini output.
+Suggested README layout:
+
+```markdown
+### Upload Interface
+
+![ClaimLens upload interface](assets/screenshot-upload.png)
+
+### Live Gemini Review
+
+![Live Gemini review](assets/screenshot-live-review.png)
+
+### Extracted Records
+
+![Structured records table](assets/screenshot-records-table.png)
+
+### JSON and Export
+
+![JSON and export interface](assets/screenshot-json-export.png)
+```
 
 ---
 
-## Key Features
+## 🛠️ Technology Stack
 
-* Multimodal PDF and image understanding
-* Structured financial-data extraction
-* Invoice and payment-record analysis
-* Cross-currency risk detection
-* Payment-proof checking
-* Multi-stage policy and audit reasoning
-* Explainable risk decisions
-* Human-in-the-loop recommendations
-* Live and cached demo modes
-* CSV export
-* Streamlit web interface
-* Redacted and synthetic demonstration data
+* Python 3.11-compatible code
+* Streamlit
+* Google Gen AI Python SDK
+* Gemini `gemini-2.5-flash`
+* Pydantic
+* Pandas
+* python-dotenv
+* Pillow
+* Pytest
 
 ---
 
-## Challenges
-
-### Inconsistent Document Formats
-
-Invoices use different layouts, date formats, currencies, field names, and visual structures.
-
-Gemini’s multimodal understanding helps interpret both document text and layout, but the extracted results still need to be normalized into a consistent schema.
-
-### Claimed Totals Versus Detected Records
-
-A file name may contain a claimed reimbursement total that does not directly match the records detected inside the document.
-
-ReimBand treats the file name as supporting context rather than verified financial evidence.
-
-### Cross-Currency Review
-
-The demo case includes a claimed total in CNY while some invoice records are in USD.
-
-The system must flag this for exchange-rate and payment-proof verification instead of automatically comparing the numbers.
-
-### Preventing Unsupported Decisions
-
-Financial workflows require caution.
-
-To reduce unsupported conclusions, ReimBand separates:
-
-* Extraction
-* Policy checking
-* Audit reasoning
-
-Each stage must identify uncertainty, missing evidence, and human-review requirements.
-
-### Privacy and Deployment
-
-Financial documents may contain sensitive information.
-
-The online demo therefore uses:
-
-* Redacted files
-* Synthetic records
-* Environment variables
-* Streamlit secrets
-* Cached fallback data
-* No committed API keys
-
----
-
-## Accomplishments
-
-ReimBand Gemini is not just a document chatbot.
-
-It demonstrates an end-to-end operational workflow:
-
-* Multimodal document understanding
-* Structured reimbursement extraction
-* Cross-currency risk detection
-* Payment-evidence checking
-* Multi-stage policy and audit reasoning
-* Explainable human-review recommendations
-* CSV export
-* Accessible online deployment
-
-The project shows how Gemini can support real workflows where accuracy, traceability, and uncertainty handling matter.
-
----
-
-## What We Learned
-
-### Multimodal Understanding Matters
-
-Important reimbursement information is often distributed across:
-
-* Text
-* Tables
-* Images
-* Layout
-* File names
-* Multiple document pages
-
-A multimodal model can reason across these different sources more effectively than a text-only pipeline.
-
-### Structured Outputs Are Essential
-
-A natural-language answer may appear convincing but is difficult to validate or integrate into a workflow.
-
-Validated structured outputs are easier to:
-
-* Display
-* Store
-* Compare
-* Export
-* Pass between stages
-* Review programmatically
-
-### AI Should Not Blindly Approve Financial Claims
-
-A useful finance assistant should explain:
-
-* What it detected
-* What remains uncertain
-* Which evidence is missing
-* Why a case is risky
-* When human review is required
-
-ReimBand is designed to support human reviewers rather than replace financial accountability.
-
----
-
-## Technology Stack
-
-* **Gemini API**
-* **Google Gen AI SDK**
-* **Python**
-* **Streamlit**
-* **Pandas**
-* **Pydantic**
-* **JSON Schema**
-* **GitHub**
-* **Streamlit Community Cloud**
-* **Multimodal PDF Processing**
-* **Structured Outputs**
-
----
-
-## Project Structure
+## 📁 Project Structure
 
 ```text
-reimband-gemini/
+CLAIMLENS/
 ├── streamlit_app.py
 ├── gemini_client.py
 ├── schemas.py
-├── prompts/
-│   ├── intake.md
-│   ├── policy.md
-│   └── audit.md
-├── demo_data/
-│   ├── demo_records.csv
-│   └── demo_agent_review.json
-├── assets/
+├── review_rules.py
+├── file_utils.py
 ├── requirements.txt
+├── README.md
+├── VIDEO_SCRIPT_EN.md
+├── DEVPOST_SUBMISSION.md
 ├── .env.example
 ├── .gitignore
-├── Dockerfile
-├── .dockerignore
-└── README.md
+├── LICENSE
+├── prompts/
+│   └── document_extraction.md
+├── sample_data/
+│   ├── sample_result.json
+│   ├── sample_records.csv
+│   └── README.md
+├── assets/
+│   └── README.md
+└── tests/
+    ├── test_filename_parser.py
+    ├── test_schemas.py
+    └── test_review_rules.py
 ```
-
-The exact structure may differ slightly depending on the deployed version.
 
 ---
 
-## Local Installation
+## 💻 Local Installation
 
-### 1. Clone the repository
-
-```bash
-git clone YOUR_REPOSITORY_URL
-cd YOUR_REPOSITORY_FOLDER
-```
-
-### 2. Create a virtual environment
-
-Windows:
+### macOS or Linux
 
 ```bash
+cd CLAIMLENS
+
 python -m venv .venv
-.venv\Scripts\activate
-```
-
-macOS or Linux:
-
-```bash
-python3 -m venv .venv
 source .venv/bin/activate
-```
 
-### 3. Install dependencies
-
-```bash
 pip install -r requirements.txt
-```
-
-### 4. Configure the Gemini API key
-
-Create a `.env` file or configure Streamlit secrets.
-
-Example:
-
-```env
-GEMINI_API_KEY=your_gemini_api_key
-```
-
-Do not commit this file to GitHub.
-
-### 5. Start the application
-
-```bash
 streamlit run streamlit_app.py
 ```
 
-The application should open at:
+### Windows PowerShell
+
+```powershell
+cd C:\path\to\CLAIMLENS
+
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+pip install -r requirements.txt
+streamlit run streamlit_app.py
+```
+
+The application should then be available locally at:
 
 ```text
 http://localhost:8501
@@ -460,97 +461,149 @@ http://localhost:8501
 
 ---
 
-## Streamlit Community Cloud Deployment
+## 🔑 Configure `GEMINI_API_KEY` Locally
 
-1. Upload the project to a public GitHub repository.
-2. Sign in to Streamlit Community Cloud.
-3. Select **Create app**.
-4. Choose the repository and branch.
-5. Select the application entry file:
+Create a local `.env` file based on `.env.example`:
+
+```env
+GEMINI_API_KEY=replace_with_your_api_key
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+Do not commit the `.env` file.
+
+It should remain excluded through `.gitignore`.
+
+---
+
+## ☁️ Streamlit Community Cloud Deployment
+
+### When `CLAIMLENS` Is Its Own GitHub Repository
+
+Use:
 
 ```text
-streamlit_app.py
+Main file path: streamlit_app.py
 ```
 
-6. Open **Advanced settings**.
-7. Add the Gemini API key to Streamlit secrets:
+### When `CLAIMLENS` Is Inside a Larger Repository
+
+Use:
+
+```text
+Main file path: CLAIMLENS/streamlit_app.py
+```
+
+### Deployment Steps
+
+1. Push the project to GitHub.
+2. Open Streamlit Community Cloud.
+3. Create a new application.
+4. Select the GitHub repository and branch.
+5. Enter the correct main file path.
+6. Add the required Streamlit secrets.
+7. Deploy the application.
+8. Replace `YOUR_STREAMLIT_URL` in this README with the public application URL.
+
+The dependencies are installed from:
+
+```text
+requirements.txt
+```
+
+---
+
+## 🔐 Configure Streamlit Secrets
+
+In the Streamlit Community Cloud application settings, add:
 
 ```toml
-GEMINI_API_KEY = "your_gemini_api_key"
+GEMINI_API_KEY = "your_api_key"
+GEMINI_MODEL = "gemini-2.5-flash"
 ```
 
-8. Click **Deploy**.
+The public application interface should not ask visitors to enter an API key.
 
-Never add the real key to:
-
-* `README.md`
-* `.env.example`
-* Python source files
-* GitHub commits
-* Screenshots
+After changing a secret, restart or redeploy the application if necessary.
 
 ---
 
-## Security and Privacy
+## 🛡️ Security and Privacy
 
-This repository must not contain:
+* No Gemini API key is hardcoded
+* Local `.env` files are excluded from Git
+* Streamlit secret files are not committed
+* The application does not intentionally retain uploaded documents
+* Temporary local files used during processing are removed after use
+* Cached sample results are clearly labeled as non-live data
+* Error messages avoid exposing API credentials
+* Public users are not asked to provide an API key
 
-* Real API keys
-* Band credentials
-* Private invoices
-* Bank-account information
-* Unredacted payment screenshots
-* Personal financial documents
+Documents sent to Gemini are processed through the configured Gemini API. Their handling is therefore also subject to the applicable Google API terms, data-use policies, and account configuration.
 
-The public demo uses only redacted or synthetic data.
-
-API credentials should be stored in:
-
-* Environment variables
-* Local `.env` files excluded by `.gitignore`
-* Streamlit secrets
-* Cloud secret-management services
+Do not upload private, confidential, or unredacted financial documents to a public demonstration deployment.
 
 ---
 
-## Future Roadmap
+## ⚠️ Known Limitations
 
-Future development may include:
-
-* A larger reimbursement-policy knowledge base
-* More invoice and payment-document formats
-* Improved multi-document matching
-* Exchange-rate evidence and currency conversion
-* Printable reimbursement packs
-* Persistent audit histories
-* User authentication
-* Enterprise finance-system integration
-* Google Cloud Run deployment
-* Database-backed review records
-* Human approval and escalation workflows
-
-Our long-term goal is to make reimbursement review faster without sacrificing transparency, traceability, or human oversight.
+* ClaimLens is a review assistant, not an approval authority
+* Extracted results still require human verification
+* Filename totals are parsed only when an explicit pattern such as `total_1990_20` is present
+* Currency inference is intentionally cautious
+* Cross-currency values are not automatically combined
+* Exchange-rate conversion is not performed
+* Gemini output quality depends on document quality and visible evidence
+* Heavy redaction may remove information needed for accurate extraction
+* Poor image resolution may reduce extraction quality
+* Live Gemini processing requires a valid API key
+* Organization-specific reimbursement policies are not yet configurable
 
 ---
 
-## Hackathon
+## 🗺️ Future Roadmap
 
-ReimBand Gemini Edition was developed for the **Build with Gemini** hackathon.
-
-The Gemini-specific work includes:
-
-* Multimodal document processing
-* Structured reimbursement extraction
-* Policy review
-* Audit reasoning
-* Cross-currency risk analysis
-* Gemini-powered live review
-* Structured output validation
+* Add exchange-rate lookup with explicit policy controls
+* Add configurable organization reimbursement policies
+* Add reviewer annotations and approval notes
+* Add batch comparison across reimbursement packages
+* Add duplicate-invoice detection
+* Add stronger pre-upload redaction checks
+* Add export templates for finance teams
+* Add reviewer decision history
+* Add confidence indicators for uncertain fields
+* Add support for more financial document categories
 
 ---
 
-## License
+## 🏆 Build with Gemini Hackathon Statement
 
-This project is provided for hackathon demonstration and educational purposes.
+This Gemini implementation was created for the **Build with Gemini Devpost hackathon**.
 
-See the repository’s `LICENSE` file for details.
+It demonstrates a working Gemini API prototype for real-world multimodal financial document review using:
+
+* Gemini `gemini-2.5-flash`
+* Multimodal PDF and image understanding
+* Structured JSON output
+* Pydantic schema validation
+* Deterministic Python finance checks
+* A public Streamlit interface
+* Downloadable review artifacts
+
+The project is an independent implementation inspired by an earlier reimbursement workflow concept. It does not use Band agents, Band SDK, WebSocket orchestration, or a multi-agent framework.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+See [`LICENSE`](LICENSE) for details.
+
+---
+
+## ⚠️ Disclaimer
+
+ClaimLens is a prototype for document review and decision support.
+
+It does not provide accounting, tax, legal, compliance, or financial advice. Extracted information and automated warnings must be verified by a qualified human reviewer before any reimbursement or payment decision is made.
