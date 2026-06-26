@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 import os
@@ -51,6 +51,24 @@ def _safe_json_text(text: str) -> str:
     return text.strip()
 
 
+def _validate_response(response) -> ReimbursementExtractionResult:
+    parsed = getattr(response, "parsed", None)
+    if isinstance(parsed, ReimbursementExtractionResult):
+        return parsed
+    if isinstance(parsed, dict):
+        return ReimbursementExtractionResult.model_validate(parsed)
+
+    text = getattr(response, "text", "")
+    if not text:
+        raise GeminiExtractionError("Gemini returned an empty response.")
+    return ReimbursementExtractionResult.model_validate_json(_safe_json_text(text))
+
+
+def _looks_like_schema_subset_error(exc: Exception) -> bool:
+    message = str(exc).lower()
+    return "additionalproperties" in message or "response_schema" in message or "schema" in message
+
+
 def extract_reimbursement(uploaded_documents: Iterable[UploadedDocument], api_key: Optional[str] = None, model: str = DEFAULT_MODEL) -> ReimbursementExtractionResult:
     api_key = api_key or configured_api_key()
     if not api_key:
@@ -80,26 +98,31 @@ def extract_reimbursement(uploaded_documents: Iterable[UploadedDocument], api_ke
             else:
                 content_parts.append(types.Part.from_bytes(data=doc.data, mime_type=doc.mime_type))
 
-        response = client.models.generate_content(
-            model=model,
-            contents=content_parts,
-            config=types.GenerateContentConfig(
-                temperature=0,
-                response_mime_type="application/json",
-                response_schema=ReimbursementExtractionResult,
-            ),
-        )
+        try:
+            response = client.models.generate_content(
+                model=model,
+                contents=content_parts,
+                config=types.GenerateContentConfig(
+                    temperature=0,
+                    response_mime_type="application/json",
+                    response_schema=ReimbursementExtractionResult,
+                ),
+            )
+        except Exception as exc:
+            if not _looks_like_schema_subset_error(exc):
+                raise
+            response = client.models.generate_content(
+                model=model,
+                contents=content_parts + [
+                    "Return only valid JSON matching the required schema. Do not include Markdown fences or explanatory text."
+                ],
+                config=types.GenerateContentConfig(
+                    temperature=0,
+                    response_mime_type="application/json",
+                ),
+            )
 
-        parsed = getattr(response, "parsed", None)
-        if isinstance(parsed, ReimbursementExtractionResult):
-            return parsed
-        if isinstance(parsed, dict):
-            return ReimbursementExtractionResult.model_validate(parsed)
-
-        text = getattr(response, "text", "")
-        if not text:
-            raise GeminiExtractionError("Gemini returned an empty response.")
-        return ReimbursementExtractionResult.model_validate_json(_safe_json_text(text))
+        return _validate_response(response)
     except ValidationError as exc:
         raise GeminiExtractionError(f"Gemini response did not match the expected schema: {exc}") from exc
     except Exception as exc:

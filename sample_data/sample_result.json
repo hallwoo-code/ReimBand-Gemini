@@ -82,7 +82,7 @@
   "detected_currencies": ["USD", "CNY"],
   "claimed_total_from_filename": 1990.2,
   "claimed_currency_from_filename": null,
-  "extracted_totals_by_currency": {"CNY": 2136.0, "USD": 7.99},
+  "extracted_totals_by_currency": [{"currency": "CNY", "amount": 2136.0}, {"currency": "USD", "amount": 7.99}],
   "payment_proof_found": false,
   "layout_observations": [
     "The sample contains invoice-style rows and a separate summary/statement-style item.",

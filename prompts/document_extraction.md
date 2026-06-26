@@ -22,3 +22,8 @@ Return structured JSON matching the provided schema. Requirements:
 - Put uncertain fields in uncertain_fields.
 - Add warnings when payment proof is missing, currency evidence is unclear, totals conflict, or visual layout is ambiguous.
 - recommended_review_action should be a short action such as human_review, recheck_required, payment_proof_needed, or ready_for_finance_review.
+
+Structured output detail:
+- `extracted_totals_by_currency` must be a list of objects, not a dynamic JSON object.
+- Each total item must use exactly this shape: {"currency": "USD", "amount": 123.45}.
+- Return only valid JSON. Do not include Markdown fences or explanatory text outside the JSON object.

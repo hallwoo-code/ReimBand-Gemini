@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class DocumentType(str, Enum):
@@ -17,9 +17,18 @@ class DocumentType(str, Enum):
     UNKNOWN = "unknown"
 
 
-class ExtractedRecord(BaseModel):
-    model_config = ConfigDict(use_enum_values=True)
+class CurrencyTotal(BaseModel):
+    currency: str = Field(..., description="Currency code or visible currency symbol.")
+    amount: float = Field(..., description="Total amount for this currency.")
 
+    @field_validator("currency")
+    @classmethod
+    def normalize_currency(cls, value: str) -> str:
+        cleaned = value.strip()
+        return cleaned.upper() if cleaned else cleaned
+
+
+class ExtractedRecord(BaseModel):
     source_file: str = Field(..., description="Original uploaded filename for this record.")
     page_or_item: Optional[str] = Field(default=None, description="Page, table row, item, or visual region if known.")
     document_type: DocumentType = Field(..., description="Best supported document type classification.")
@@ -36,7 +45,7 @@ class ExtractedRecord(BaseModel):
 
     @field_validator("currency")
     @classmethod
-    def normalize_currency(cls, value: Optional[str]) -> Optional[str]:
+    def normalize_optional_currency(cls, value: Optional[str]) -> Optional[str]:
         if value is None:
             return None
         cleaned = value.strip()
@@ -51,13 +60,21 @@ class ReimbursementExtractionResult(BaseModel):
     detected_currencies: List[str] = Field(default_factory=list)
     claimed_total_from_filename: Optional[float] = None
     claimed_currency_from_filename: Optional[str] = None
-    extracted_totals_by_currency: Dict[str, float] = Field(default_factory=dict)
+    extracted_totals_by_currency: List[CurrencyTotal] = Field(default_factory=list)
     payment_proof_found: bool = False
     layout_observations: List[str] = Field(default_factory=list)
     uncertain_fields: List[str] = Field(default_factory=list)
     warnings: List[str] = Field(default_factory=list)
     recommended_review_action: str = "human_review"
 
+    @field_validator("extracted_totals_by_currency", mode="before")
+    @classmethod
+    def normalize_extracted_totals(cls, values):
+        if values is None:
+            return []
+        if hasattr(values, "items"):
+            return [{"currency": str(currency), "amount": amount} for currency, amount in values.items()]
+        return values
     @field_validator("detected_currencies")
     @classmethod
     def normalize_detected_currencies(cls, values: List[str]) -> List[str]:
