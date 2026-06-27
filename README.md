@@ -14,7 +14,7 @@ ClaimLens is a Gemini-powered reimbursement review prototype that transforms red
 
 ## 🎥 YouTube Demo
 
-[Watch the Demo Video](YOUR_YOUTUBE_URL)
+[Watch the Demo Video](https://www.youtube.com/watch?v=QBD1nhiKJes)
 
 ---
 
