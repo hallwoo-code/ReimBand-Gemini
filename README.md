@@ -10,7 +10,7 @@ ClaimLens is a Gemini-powered reimbursement review prototype that transforms red
 
 ## 🚀 Live Demo
 
-[Open the Streamlit Demo]([https://claimlens-gemini-powered-reimbursement-document-review-o86mtqf.streamlit.app/]
+[Open the Streamlit Demo](https://claimlens-gemini-powered-reimbursement-document-review-o86mtqf.streamlit.app/)
 
 ## 🎥 YouTube Demo
 
